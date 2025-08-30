@@ -1,0 +1,103 @@
+:root {
+    --bg-color: #f4f7f6;
+    --text-color: #333;
+    --primary-color: #005f73;
+    --card-bg: #ffffff;
+    --live-color: #0a9396;
+    --scheduled-color: #ee9b00;
+    --border-color: #e0e0e0;
+}
+
+body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+    background-color: var(--bg-color);
+    color: var(--text-color);
+    margin: 0;
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+header, main, footer {
+    width: 100%;
+    max-width: 800px;
+    text-align: center;
+}
+
+header h1 {
+    color: var(--primary-color);
+}
+
+#train-list-container {
+    background-color: var(--card-bg);
+    border-radius: 8px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    padding: 20px;
+    margin-top: 20px;
+}
+
+#last-updated {
+    font-size: 0.8em;
+    color: #888;
+    margin-bottom: 15px;
+    text-align: right;
+}
+
+.train-card {
+    border: 1px solid var(--border-color);
+    border-left-width: 5px;
+    border-radius: 5px;
+    padding: 15px;
+    margin-bottom: 15px;
+    text-align: left;
+    transition: transform 0.2s;
+}
+
+.train-card:hover {
+    transform: scale(1.02);
+}
+
+.status-live { border-left-color: var(--live-color); }
+.status-scheduled { border-left-color: var(--scheduled-color); }
+
+.train-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-weight: bold;
+}
+
+.train-time { font-size: 1.5em; }
+.train-headsign { font-size: 1.2em; }
+
+.train-details {
+    margin-top: 10px;
+    font-size: 0.9em;
+    color: #555;
+}
+
+.delay {
+    font-weight: bold;
+    color: #d00000;
+}
+
+.no-trains {
+    color: #777;
+    font-style: italic;
+}
+
+.loader {
+    border: 4px solid #f3f3f3;
+    border-radius: 50%;
+    border-top: 4px solid var(--primary-color);
+    width: 40px;
+    height: 40px;
+    animation: spin 1s linear infinite;
+    margin: 20px auto;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
