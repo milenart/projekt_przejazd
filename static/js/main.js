@@ -1,80 +1,42 @@
 document.addEventListener('DOMContentLoaded', function() {
 
     // --- Referencje do elementów interfejsu ---
-    const stationInput = document.getElementById('station-input');
+    const stationSelect = document.getElementById('station-select');
     const windowInput = document.getElementById('window-input');
     const searchButton = document.getElementById('search-button');
     const trainListElement = document.getElementById('train-list');
-    const lastUpdatedElement = document.getElementById('last-updated');
 
-    // --- LOGIKA INTELIGENTNEJ WYSZUKIWARKI ---
-    let allStations = []; // Tu przechowamy wszystkie stacje pobrane z API
-    
-    // Tworzymy kontener na dynamiczne sugestie i dodajemy go do drzewa DOM
-    const suggestionsContainer = document.createElement('div');
-    suggestionsContainer.id = 'suggestions-container';
-    stationInput.parentNode.appendChild(suggestionsContainer);
-
-    // Funkcja pobierająca listę stacji z naszego backendu
-    async function populateStationList() {
+    // --- Funkcja do wypełniania listy stacji ---
+    async function populateStationSelect() {
         try {
             const response = await fetch('/api/stations');
-            allStations = await response.json();
-            // Inicjalnie ładujemy dane dla stacji domyślnej
-            fetchAndDisplayTrains();
+            const stations = await response.json();
+            
+            stationSelect.innerHTML = '';
+            stations.forEach(station => {
+                const option = document.createElement('option');
+                option.value = station;
+                option.textContent = station;
+                // Używamy .includes() dla większej niezawodności
+                if (station.toLowerCase().includes("nowa iwiczna")) {
+                    option.selected = true;
+                }
+                stationSelect.appendChild(option);
+            });
         } catch (error) {
             console.error("Nie udało się pobrać listy stacji:", error);
         }
     }
 
-    // Nasłuchujemy na wpisywanie tekstu w polu
-    stationInput.addEventListener('input', () => {
-        const query = stationInput.value.toLowerCase();
-        suggestionsContainer.innerHTML = '';
-        if (query.length === 0) {
-            suggestionsContainer.style.display = 'none';
-            return;
-        }
-
-        // Filtrujemy stacje, które pasują do wpisanego tekstu
-        const filteredStations = allStations.filter(station => 
-            station.toLowerCase().includes(query)
-        ).slice(0, 10); // Ograniczamy do 10 sugestii dla wydajności
-
-        if (filteredStations.length > 0) {
-            filteredStations.forEach(station => {
-                const suggestionItem = document.createElement('div');
-                suggestionItem.textContent = station;
-                suggestionItem.classList.add('suggestion-item');
-                // Po kliknięciu na sugestię:
-                suggestionItem.addEventListener('click', () => {
-                    stationInput.value = station; // Ustaw wartość pola na klikniętą stację
-                    suggestionsContainer.style.display = 'none'; // Ukryj sugestie
-                });
-                suggestionsContainer.appendChild(suggestionItem);
-            });
-            suggestionsContainer.style.display = 'block'; // Pokaż kontener z sugestiami
-        } else {
-            suggestionsContainer.style.display = 'none'; // Ukryj, jeśli brak pasujących
-        }
-    });
-
-    // Ukrywamy sugestie, gdy użytkownik kliknie gdziekolwiek indziej na stronie
-    document.addEventListener('click', (e) => {
-        if (e.target !== stationInput) {
-            suggestionsContainer.style.display = 'none';
-        }
-    });
-
     // --- Główna funkcja do pobierania i wyświetlania danych ---
     async function fetchAndDisplayTrains() {
-        const station = stationInput.value;
+        const station = stationSelect.value;
         const timeWindow = windowInput.value;
 
         trainListElement.innerHTML = `
             <div class="loader-container">
                 <div class="loader"></div>
-                <p>Wyszukuję pociągi...</p>
+                <p>Wyszukuję...</p>
             </div>`;
 
         try {
@@ -84,21 +46,33 @@ document.addEventListener('DOMContentLoaded', function() {
             const data = await response.json();
 
             trainListElement.innerHTML = '';
-            lastUpdatedElement.textContent = `Wyniki dla "${station}" z ${new Date().toLocaleTimeString()}`;
 
             if (data.trains && data.trains.length > 0) {
                 data.trains.forEach(train => {
                     const card = document.createElement('div');
                     card.classList.add('train-card');
+
+                    // --- NOWA KARTA: Przyjazd i Odjazd ---
                     card.innerHTML = `
-                        <div class="train-header">
-                            <span class="train-headsign">${train.trip_headsign}</span>
-                            <span class="train-time">${train.arrival_time.substring(0, 5)}</span>
+                        <div class="time-block">
+                            <div class="label">Planowany Przyjazd</div>
+                            <div class="time">${train.arrival_time.substring(0, 5)}</div>
+                            <div class="delay-info"></div>
                         </div>
-                        <div class="train-details">
-                            <span>Planowy przyjazd</span>
+                        <div class="time-block">
+                            <div class="label">Planowany Odjazd</div>
+                            <div class="time">${train.departure_time.substring(0, 5)}</div>
+                            <div class="delay-info"></div>
                         </div>
                     `;
+                    
+                    // Logika opóźnienia (przygotowana na przyszłość)
+                    if (train.delay_minutes > 0) {
+                        card.querySelectorAll('.delay-info').forEach(el => {
+                            el.textContent = `Opóźnienie: ${train.delay_minutes} min`;
+                        });
+                    }
+                    
                     trainListElement.appendChild(card);
                 });
             } else {
@@ -111,10 +85,6 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     // --- Inicjalizacja Aplikacji ---
-    
-    // 1. Pobierz listę wszystkich stacji w tle
-    populateStationList();
-
-    // 2. Ustaw nasłuchiwanie na KLIKNIĘCIE PRZYCISKU "Szukaj"
+    populateStationSelect();
     searchButton.addEventListener('click', fetchAndDisplayTrains);
 });
