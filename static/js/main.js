@@ -1,79 +1,120 @@
-// Czekaj, aż cały dokument HTML zostanie załadowany
 document.addEventListener('DOMContentLoaded', function() {
 
+    // --- Referencje do elementów interfejsu ---
+    const stationInput = document.getElementById('station-input');
+    const windowInput = document.getElementById('window-input');
+    const searchButton = document.getElementById('search-button');
     const trainListElement = document.getElementById('train-list');
     const lastUpdatedElement = document.getElementById('last-updated');
 
-    // Funkcja do formatowania czasu i obliczania opóźnień
-    function formatTime(timeString, delayMinutes) {
-        if (!timeString) return "Brak danych";
-        const [hours, minutes] = timeString.split(':');
-        const scheduledDate = new Date();
-        scheduledDate.setHours(hours, minutes, 0, 0);
+    // --- LOGIKA INTELIGENTNEJ WYSZUKIWARKI ---
+    let allStations = []; // Tu przechowamy wszystkie stacje pobrane z API
+    
+    // Tworzymy kontener na dynamiczne sugestie i dodajemy go do drzewa DOM
+    const suggestionsContainer = document.createElement('div');
+    suggestionsContainer.id = 'suggestions-container';
+    stationInput.parentNode.appendChild(suggestionsContainer);
 
-        if (delayMinutes > 0) {
-            const actualDate = new Date(scheduledDate.getTime() + delayMinutes * 60000);
-            const actualHours = String(actualDate.getHours()).padStart(2, '0');
-            const actualMinutes = String(actualDate.getMinutes()).padStart(2, '0');
-            return `<s>${hours}:${minutes}</s> <span class="delay">→ ${actualHours}:${actualMinutes}</span>`;
+    // Funkcja pobierająca listę stacji z naszego backendu
+    async function populateStationList() {
+        try {
+            const response = await fetch('/api/stations');
+            allStations = await response.json();
+            // Inicjalnie ładujemy dane dla stacji domyślnej
+            fetchAndDisplayTrains();
+        } catch (error) {
+            console.error("Nie udało się pobrać listy stacji:", error);
         }
-        return `${hours}:${minutes}`;
     }
 
-    // Główna funkcja do pobierania i wyświetlania danych
+    // Nasłuchujemy na wpisywanie tekstu w polu
+    stationInput.addEventListener('input', () => {
+        const query = stationInput.value.toLowerCase();
+        suggestionsContainer.innerHTML = '';
+        if (query.length === 0) {
+            suggestionsContainer.style.display = 'none';
+            return;
+        }
+
+        // Filtrujemy stacje, które pasują do wpisanego tekstu
+        const filteredStations = allStations.filter(station => 
+            station.toLowerCase().includes(query)
+        ).slice(0, 10); // Ograniczamy do 10 sugestii dla wydajności
+
+        if (filteredStations.length > 0) {
+            filteredStations.forEach(station => {
+                const suggestionItem = document.createElement('div');
+                suggestionItem.textContent = station;
+                suggestionItem.classList.add('suggestion-item');
+                // Po kliknięciu na sugestię:
+                suggestionItem.addEventListener('click', () => {
+                    stationInput.value = station; // Ustaw wartość pola na klikniętą stację
+                    suggestionsContainer.style.display = 'none'; // Ukryj sugestie
+                });
+                suggestionsContainer.appendChild(suggestionItem);
+            });
+            suggestionsContainer.style.display = 'block'; // Pokaż kontener z sugestiami
+        } else {
+            suggestionsContainer.style.display = 'none'; // Ukryj, jeśli brak pasujących
+        }
+    });
+
+    // Ukrywamy sugestie, gdy użytkownik kliknie gdziekolwiek indziej na stronie
+    document.addEventListener('click', (e) => {
+        if (e.target !== stationInput) {
+            suggestionsContainer.style.display = 'none';
+        }
+    });
+
+    // --- Główna funkcja do pobierania i wyświetlania danych ---
     async function fetchAndDisplayTrains() {
+        const station = stationInput.value;
+        const timeWindow = windowInput.value;
+
+        trainListElement.innerHTML = `
+            <div class="loader-container">
+                <div class="loader"></div>
+                <p>Wyszukuję pociągi...</p>
+            </div>`;
+
         try {
-            const response = await fetch('/api/status');
-            if (!response.ok) {
-                throw new Error(`Błąd HTTP: ${response.status}`);
-            }
+            const apiUrl = `/api/status?station=${encodeURIComponent(station)}&window=${timeWindow}`;
+            const response = await fetch(apiUrl);
+            if (!response.ok) throw new Error(`Błąd HTTP: ${response.status}`);
             const data = await response.json();
 
-            // Czyścimy kontener przed dodaniem nowych danych
             trainListElement.innerHTML = '';
-
-            // Aktualizujemy czas ostatniej aktualizacji
-            lastUpdatedElement.textContent = `Ostatnia aktualizacja: ${new Date().toLocaleTimeString()}`;
+            lastUpdatedElement.textContent = `Wyniki dla "${station}" z ${new Date().toLocaleTimeString()}`;
 
             if (data.trains && data.trains.length > 0) {
                 data.trains.forEach(train => {
                     const card = document.createElement('div');
                     card.classList.add('train-card');
-                    
-                    // Ustaw kolor ramki w zależności od statusu
-                    if (train.live_status === 'FOUND_LIVE') {
-                        card.classList.add('status-live');
-                    } else {
-                        card.classList.add('status-scheduled');
-                    }
-
-                    const delayText = train.delay_minutes > 0 ? `Opóźnienie: ${train.delay_minutes} min` : "Brak opóźnień";
-                    const statusText = train.live_status === 'FOUND_LIVE' ? `Status na żywo (${delayText})` : "Tylko wg rozkładu";
-
                     card.innerHTML = `
                         <div class="train-header">
                             <span class="train-headsign">${train.trip_headsign}</span>
-                            <span class="train-time">${formatTime(train.arrival_time, train.delay_minutes)}</span>
+                            <span class="train-time">${train.arrival_time.substring(0, 5)}</span>
                         </div>
                         <div class="train-details">
-                            <span>${statusText}</span>
+                            <span>Planowy przyjazd</span>
                         </div>
                     `;
                     trainListElement.appendChild(card);
                 });
             } else {
-                trainListElement.innerHTML = '<p class="no-trains">Brak pociągów w najbliższym czasie.</p>';
+                trainListElement.innerHTML = `<p class="no-trains">Brak pociągów dla stacji "${station}" w ciągu najbliższych ${timeWindow} minut.</p>`;
             }
-
         } catch (error) {
             console.error("Nie udało się pobrać danych o pociągach:", error);
-            trainListElement.innerHTML = '<p class="no-trains">Wystąpił błąd podczas ładowania danych. Spróbuj ponownie później.</p>';
+            trainListElement.innerHTML = '<p class="no-trains">Wystąpił błąd podczas ładowania danych.</p>';
         }
     }
 
-    // Uruchom funkcję od razu po załadowaniu strony
-    fetchAndDisplayTrains();
+    // --- Inicjalizacja Aplikacji ---
+    
+    // 1. Pobierz listę wszystkich stacji w tle
+    populateStationList();
 
-    // Ustaw automatyczne odświeżanie co 30 sekund
-    setInterval(fetchAndDisplayTrains, 30000); 
+    // 2. Ustaw nasłuchiwanie na KLIKNIĘCIE PRZYCISKU "Szukaj"
+    searchButton.addEventListener('click', fetchAndDisplayTrains);
 });

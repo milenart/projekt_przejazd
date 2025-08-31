@@ -1,65 +1,124 @@
+/* --- Nowa, Atrakcyjna Paleta Kolorów --- */
 :root {
-    --bg-color: #f4f7f6;
-    --text-color: #333;
-    --primary-color: #005f73;
-    --card-bg: #ffffff;
-    --live-color: #0a9396;
-    --scheduled-color: #ee9b00;
-    --border-color: #e0e0e0;
+    --bg-gradient-start: #1D2B64;
+    --bg-gradient-end: #F8CDDA;
+    --card-bg: rgba(255, 255, 255, 0.9);
+    --text-color: #2c3e50;
+    --header-text-color: #ffffff;
+    --primary-color: #3498db;
+    --shadow-color: rgba(0, 0, 0, 0.1);
+    --border-color: #ecf0f1;
+    --accent-color: #e74c3c;
 }
 
+/* --- Globalne Ustawienia i Tło z Gradientem --- */
 body {
-    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
-    background-color: var(--bg-color);
+    font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+    background: linear-gradient(135deg, var(--bg-gradient-start), var(--bg-gradient-end));
+    background-attachment: fixed;
     color: var(--text-color);
     margin: 0;
     padding: 20px;
     display: flex;
     flex-direction: column;
     align-items: center;
+    min-height: 100vh;
 }
 
-header, main, footer {
+/* --- Nagłówek --- */
+header {
     width: 100%;
     max-width: 800px;
     text-align: center;
+    color: var(--header-text-color);
+    text-shadow: 1px 1px 3px rgba(0, 0, 0, 0.3);
+    margin-bottom: 30px;
 }
-
 header h1 {
-    color: var(--primary-color);
+    margin: 0;
+    font-size: 2.5em;
 }
 
-#train-list-container {
+/* --- Panel Sterowania --- */
+.controls-panel {
+    width: 100%;
+    max-width: 800px;
+    display: flex;
+    gap: 20px;
+    justify-content: center;
+    align-items: flex-end;
+    margin-bottom: 30px;
+    padding: 25px;
     background-color: var(--card-bg);
+    border-radius: 12px;
+    box-shadow: 0 8px 16px var(--shadow-color);
+    backdrop-filter: blur(5px);
+    flex-wrap: wrap;
+}
+
+.control-group {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    flex-grow: 1;
+}
+
+.control-group label {
+    font-size: 0.9em;
+    margin-bottom: 8px;
+    font-weight: 600;
+    color: #555;
+}
+
+.control-group input {
+    width: 100%;
+    padding: 12px;
     border-radius: 8px;
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-    padding: 20px;
-    margin-top: 20px;
+    border: 1px solid var(--border-color);
+    font-size: 1em;
+    box-sizing: border-box;
+    transition: all 0.3s ease;
+}
+.control-group input:focus {
+    outline: none;
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.2);
+}
+
+/* --- Główny Kontener na Listę Pociągów --- */
+#train-list-container {
+    width: 100%;
+    max-width: 800px;
+    background-color: var(--card-bg);
+    border-radius: 12px;
+    box-shadow: 0 8px 16px var(--shadow-color);
+    backdrop-filter: blur(5px);
+    padding: 25px;
+    transition: all 0.5s ease;
 }
 
 #last-updated {
     font-size: 0.8em;
     color: #888;
-    margin-bottom: 15px;
+    margin-bottom: 20px;
     text-align: right;
 }
 
+/* --- Karta Pojedynczego Pociągu --- */
 .train-card {
     border: 1px solid var(--border-color);
-    border-left-width: 5px;
-    border-radius: 5px;
-    padding: 15px;
+    border-left: 5px solid var(--primary-color);
+    border-radius: 8px;
+    padding: 20px;
     margin-bottom: 15px;
-    text-align: left;
-    transition: transform 0.2s;
+    background: #fff;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
 }
-
 .train-card:hover {
-    transform: scale(1.02);
+    transform: translateY(-3px);
+    box-shadow: 0 6px 12px rgba(0,0,0,0.1);
 }
-
-.status-live { border-left-color: var(--live-color); }
-.status-scheduled { border-left-color: var(--scheduled-color); }
 
 .train-header {
     display: flex;
@@ -67,9 +126,8 @@ header h1 {
     align-items: center;
     font-weight: bold;
 }
-
-.train-time { font-size: 1.5em; }
-.train-headsign { font-size: 1.2em; }
+.train-time { font-size: 1.8em; }
+.train-headsign { font-size: 1.3em; }
 
 .train-details {
     margin-top: 10px;
@@ -77,27 +135,133 @@ header h1 {
     color: #555;
 }
 
-.delay {
-    font-weight: bold;
-    color: #d00000;
-}
-
-.no-trains {
+/* --- Animacja Ładowania --- */
+.loader-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 40px;
     color: #777;
-    font-style: italic;
 }
-
 .loader {
-    border: 4px solid #f3f3f3;
+    border: 5px solid #f3f3f3;
     border-radius: 50%;
-    border-top: 4px solid var(--primary-color);
-    width: 40px;
-    height: 40px;
+    border-top: 5px solid var(--primary-color);
+    width: 50px;
+    height: 50px;
     animation: spin 1s linear infinite;
-    margin: 20px auto;
+    margin-bottom: 15px;
 }
-
 @keyframes spin {
     0% { transform: rotate(0deg); }
     100% { transform: rotate(360deg); }
+}
+
+/* --- Stopka --- */
+footer {
+    margin-top: 30px;
+    color: rgba(255, 255, 255, 0.8);
+}
+
+/* --- Style dla Inteligentnej Wyszukiwarki --- */
+.control-group {
+    position: relative; /* Potrzebne do pozycjonowania sugestii */
+}
+
+#suggestions-container {
+    display: none; /* Domyślnie ukryte */
+    position: absolute;
+    top: 100%; /* Poniżej inputa */
+    left: 0;
+    right: 0;
+    background-color: white;
+    border: 1px solid var(--border-color);
+    border-top: none;
+    border-radius: 0 0 8px 8px;
+    max-height: 200px;
+    overflow-y: auto;
+    z-index: 1000;
+}
+
+.suggestion-item {
+    padding: 12px;
+    cursor: pointer;
+    transition: background-color 0.2s;
+}
+
+.suggestion-item:hover {
+    background-color: #f0f0f0;
+}
+
+/* --- Style dla nowej listy rozwijanej i przycisku --- */
+.control-group select, .control-group button {
+    width: 100%;
+    padding: 12px;
+    border-radius: 8px;
+    border: 1px solid var(--border-color);
+    font-size: 1em;
+    box-sizing: border-box;
+    transition: all 0.3s ease;
+    background-color: #fff; /* Dodajemy tło dla selecta */
+}
+
+.control-group select:focus, .control-group input:focus {
+    outline: none;
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.2);
+}
+
+#search-button {
+    background-color: var(--primary-color);
+    color: white;
+    font-weight: bold;
+    cursor: pointer;
+    border: none;
+    align-self: flex-end; /* Wyrównaj do dołu w grupie */
+}
+
+#search-button:hover {
+    background-color: #2980b9; /* Ciemniejszy odcień po najechaniu */
+}
+
+/* Usuwamy strzałki w polu numerycznym dla czystszego wyglądu */
+input[type=number]::-webkit-inner-spin-button, 
+input[type=number]::-webkit-outer-spin-button { 
+  -webkit-appearance: none; 
+  margin: 0; 
+}
+input[type=number] {
+  -moz-appearance: textfield;
+}
+/* --- Style dla Inteligentnej Wyszukiwarki --- */
+.control-group {
+    position: relative; /* Potrzebne do pozycjonowania sugestii */
+}
+
+#suggestions-container {
+    display: none; /* Domyślnie ukryte */
+    position: absolute;
+    top: 100%; /* Pojawia się bezpośrednio pod inputem */
+    left: 0;
+    right: 0;
+    background-color: white;
+    border: 1px solid var(--border-color);
+    border-top: none;
+    border-radius: 0 0 8px 8px;
+    max-height: 200px; /* Ograniczenie wysokości, aby lista była przewijalna */
+    overflow-y: auto;
+    z-index: 1000; /* Upewnij się, że jest na wierzchu */
+    box-shadow: 0 8px 16px rgba(0,0,0,0.1);
+}
+
+.suggestion-item {
+    padding: 12px;
+    cursor: pointer;
+    transition: background-color 0.2s;
+    text-align: left; /* Wyrównaj tekst do lewej */
+}
+
+.suggestion-item:hover {
+    background-color: #f0f0f0;
 }
