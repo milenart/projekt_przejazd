@@ -35,7 +35,8 @@ def get_scheduled_trains(station_name, time_window_minutes=60):
         end_time = now + timedelta(minutes=time_window_minutes)
         end_time_str = end_time.strftime("%H:%M:%S")
 
-        # NOWE, W PEŁNI DYNAMICZNE ZAPYTANIE
+        # --- POPRAWKA 1: Zmodyfikowane zapytanie SQL ---
+        # Teraz szukamy pociągów, których PRZYJAZD lub ODJAZD mieści się w oknie czasowym
         query = f"""
             SELECT * FROM schedule 
             WHERE 
@@ -43,8 +44,11 @@ def get_scheduled_trains(station_name, time_window_minutes=60):
                 ({today_column} = 1) AND 
                 (start_date <= {today_date_int}) AND 
                 (end_date >= {today_date_int}) AND
-                (arrival_time BETWEEN '{current_time_str}' AND '{end_time_str}')
-            ORDER BY arrival_time
+                (
+                    (arrival_time BETWEEN '{current_time_str}' AND '{end_time_str}') OR
+                    (departure_time BETWEEN '{current_time_str}' AND '{end_time_str}')
+                )
+            ORDER BY departure_time, arrival_time
         """
         
         upcoming_df = pd.read_sql_query(query, conn, params=(station_name,))
@@ -62,7 +66,7 @@ def index():
 
 @app.route('/api/status')
 def get_status():
-    station = request.args.get('station', 'Nowa Iwiczna') # Domyślna wartość wciąż jest
+    station = request.args.get('station', 'Nowa Iwiczna')
     try:
         window = int(request.args.get('window', 60))
     except ValueError:
@@ -72,8 +76,10 @@ def get_status():
     
     final_results = []
     for train in scheduled_trains:
+        # --- POPRAWKA 2: Dodajemy 'departure_time' do odpowiedzi JSON ---
         final_results.append({
             "arrival_time": train.get('arrival_time'),
+            "departure_time": train.get('departure_time'),
             "trip_headsign": train.get('trip_headsign'),
             "live_status": 'SCHEDULED_ONLY',
             "delay_minutes": 0,
@@ -83,3 +89,7 @@ def get_status():
         "info": f"Schedule data for {station} in the next {window} minutes.",
         "trains": final_results
     })
+
+# Jeśli chcesz uruchamiać ten plik bezpośrednio
+if __name__ == '__main__':
+    app.run(debug=True)

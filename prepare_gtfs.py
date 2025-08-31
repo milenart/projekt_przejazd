@@ -30,8 +30,9 @@ def prepare_database():
     full_schedule_df = pd.merge(merged2, stops_df, on='stop_id')
     
     # Wybieramy tylko te kolumny, których potrzebujemy
+    # --- POPRAWKA: Dodajemy 'departure_time' do listy ---
     final_df = full_schedule_df[[
-        'stop_name', 'arrival_time', 'trip_headsign',
+        'stop_name', 'arrival_time', 'departure_time', 'trip_headsign',
         'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday',
         'start_date', 'end_date'
     ]]

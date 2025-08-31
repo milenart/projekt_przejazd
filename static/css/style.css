@@ -138,3 +138,37 @@ footer { margin-top: 30px; color: rgba(255, 255, 255, 0.8); text-align: center; 
         align-items: flex-end;
     }
 }
+
+/* --- Style dla autouzupełniania --- */
+
+/* Pozycjonowanie kontenera z sugestiami względem jego rodzica */
+.control-group {
+    position: relative;
+}
+
+#suggestions-container {
+    display: none; /* Domyślnie ukryty */
+    position: absolute;
+    background-color: #ffffff;
+    border: 1px solid #ccc;
+    border-top: none;
+    z-index: 1000; /* Upewnij się, że jest nad innymi elementami */
+    width: 100%; /* Dopasuj szerokość do pola input */
+    max-height: 200px; /* Ogranicz wysokość, dodaj przewijanie */
+    overflow-y: auto;
+    box-sizing: border-box; /* Uniknij problemów z paddingiem i borderem */
+}
+
+.suggestion-item {
+    padding: 10px;
+    cursor: pointer;
+    border-bottom: 1px solid #eee;
+}
+
+.suggestion-item:last-child {
+    border-bottom: none;
+}
+
+.suggestion-item:hover {
+    background-color: #f0f0f0;
+}
