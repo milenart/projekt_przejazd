@@ -10,6 +10,7 @@ document.addEventListener('DOMContentLoaded', function() {
     async function populateStationSelect() {
         try {
             const response = await fetch('/api/stations');
+            if (!response.ok) throw new Error('Błąd sieci');
             const stations = await response.json();
             
             stationSelect.innerHTML = '';
@@ -17,7 +18,6 @@ document.addEventListener('DOMContentLoaded', function() {
                 const option = document.createElement('option');
                 option.value = station;
                 option.textContent = station;
-                // Używamy .includes() dla większej niezawodności
                 if (station.toLowerCase().includes("nowa iwiczna")) {
                     option.selected = true;
                 }
@@ -39,6 +39,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 <p>Wyszukuję...</p>
             </div>`;
 
+        // --- POPRAWIONA SKŁADNIA BLOKU TRY...CATCH ---
         try {
             const apiUrl = `/api/status?station=${encodeURIComponent(station)}&window=${timeWindow}`;
             const response = await fetch(apiUrl);
@@ -51,8 +52,6 @@ document.addEventListener('DOMContentLoaded', function() {
                 data.trains.forEach(train => {
                     const card = document.createElement('div');
                     card.classList.add('train-card');
-
-                    // --- NOWA KARTA: Przyjazd i Odjazd ---
                     card.innerHTML = `
                         <div class="time-block">
                             <div class="label">Planowany Przyjazd</div>
@@ -66,13 +65,11 @@ document.addEventListener('DOMContentLoaded', function() {
                         </div>
                     `;
                     
-                    // Logika opóźnienia (przygotowana na przyszłość)
                     if (train.delay_minutes > 0) {
                         card.querySelectorAll('.delay-info').forEach(el => {
                             el.textContent = `Opóźnienie: ${train.delay_minutes} min`;
                         });
                     }
-                    
                     trainListElement.appendChild(card);
                 });
             } else {
@@ -80,7 +77,7 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         } catch (error) {
             console.error("Nie udało się pobrać danych o pociągach:", error);
-            trainListElement.innerHTML = '<p class="no-trains">Wystąpił błąd podczas ładowania danych.</p>';
+            trainListElement.innerHTML = '<p class="no-trains">Wystąpił błąd podczas ładowania danych. Sprawdź konsolę, aby uzyskać więcej informacji.</p>';
         }
     }
 
