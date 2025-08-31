@@ -55,12 +55,12 @@ document.addEventListener('DOMContentLoaded', function() {
                     card.innerHTML = `
                         <div class="time-block">
                             <div class="label">Planowany Przyjazd</div>
-                            <div class="time">${train.arrival_time.substring(0, 5)}</div>
+                            <div class="time">${train.arrival_time?.substring(0, 5) ?? '---'}</div>
                             <div class="delay-info"></div>
                         </div>
                         <div class="time-block">
                             <div class="label">Planowany Odjazd</div>
-                            <div class="time">${train.departure_time.substring(0, 5)}</div>
+                            <div class="time">${train.departure_time?.substring(0, 5) ?? '---'}</div>
                             <div class="delay-info"></div>
                         </div>
                     `;
