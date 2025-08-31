@@ -1,7 +1,7 @@
 document.addEventListener('DOMContentLoaded', function() {
 
     // --- Referencje do elementów interfejsu ---
-    const stationSelect = document.getElementById('station-select');
+    const stationSelect = document.getElementById('station-input');
     const windowInput = document.getElementById('window-input');
     const searchButton = document.getElementById('search-button');
     const trainListElement = document.getElementById('train-list');
