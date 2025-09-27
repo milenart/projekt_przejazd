@@ -1,4 +1,4 @@
-/* --- Atrakcyjna Paleta Kolorów (pozostaje bez zmian) --- */
+/* --- Atrakcyjna Paleta Kolorów --- */
 :root {
     --bg-gradient-start: #1D2B64;
     --bg-gradient-end: #F8CDDA;
@@ -10,14 +10,14 @@
     --border-color: #ecf0f1;
 }
 
-/* --- Globalne Ustawienia i Tło (pozostaje bez zmian) --- */
+/* --- Globalne Ustawienia i Tło --- */
 body {
     font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
     background: linear-gradient(135deg, var(--bg-gradient-start), var(--bg-gradient-end));
     background-attachment: fixed;
     color: var(--text-color);
     margin: 0;
-    padding: 15px; /* Mniejszy padding na telefonie */
+    padding: 15px;
     min-height: 100vh;
 }
 main {
@@ -26,7 +26,7 @@ main {
     margin: 0 auto;
 }
 
-/* --- Nagłówek (dostosowany do telefonów) --- */
+/* --- Nagłówek --- */
 header {
     text-align: center;
     color: var(--header-text-color);
@@ -35,12 +35,12 @@ header {
 }
 header h1 {
     margin: 0;
-    font-size: 2em; /* Mniejszy na telefonie */
+    font-size: 2em;
 }
 
-/* --- Panel Sterowania (dostosowany do telefonów) --- */
+/* --- Panel Sterowania --- */
 .controls-panel {
-    display: grid; /* Używamy siatki dla lepszego układu */
+    display: grid;
     gap: 15px;
     margin-bottom: 25px;
     padding: 20px;
@@ -75,7 +75,7 @@ header h1 {
     border: none;
 }
 
-/* --- NOWA, ULEPSZONA KARTA POCIĄGU --- */
+/* --- Karta Pociągu --- */
 .train-card {
     border-left: 5px solid var(--primary-color);
     border-radius: 8px;
@@ -84,7 +84,7 @@ header h1 {
     background: #fff;
     box-shadow: 0 4px 6px rgba(0,0,0,0.05);
     display: flex;
-    justify-content: space-around; /* Równe odstępy */
+    justify-content: space-around;
     align-items: center;
     text-align: center;
 }
@@ -108,67 +108,55 @@ header h1 {
     height: 1.2em;
 }
 
-/* --- Animacja Ładowania i inne (bez zmian) --- */
-.loader-container {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    padding: 40px;
-    color: #777;
-}
-.loader {
-    border: 5px solid #f3f3f3;
-    border-radius: 50%;
-    border-top: 5px solid var(--primary-color);
-    width: 50px;
-    height: 50px;
-    animation: spin 1s linear infinite;
-    margin-bottom: 15px;
-}
+/* --- Animacja Ładowania i inne --- */
+.loader-container { display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 40px; color: #777; }
+.loader { border: 5px solid #f3f3f3; border-radius: 50%; border-top: 5px solid var(--primary-color); width: 50px; height: 50px; animation: spin 1s linear infinite; margin-bottom: 15px; }
 @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
 footer { margin-top: 30px; color: rgba(255, 255, 255, 0.8); text-align: center; }
 
-/* --- RESPONSYWNOŚĆ: Ustawienia dla większych ekranów (Desktop) --- */
+/* --- Responsywność --- */
 @media (min-width: 600px) {
     body { padding: 30px; }
     header h1 { font-size: 2.5em; }
-    .controls-panel {
-        grid-template-columns: 2fr 1fr 1fr;
-        align-items: flex-end;
-    }
+    .controls-panel { grid-template-columns: 2fr 1fr 1fr; align-items: flex-end; }
 }
 
 /* --- Style dla autouzupełniania --- */
+.control-group { position: relative; }
+#suggestions-container { display: none; position: absolute; background-color: #ffffff; border: 1px solid #ccc; border-top: none; z-index: 1000; width: 100%; max-height: 200px; overflow-y: auto; box-sizing: border-box; }
+.suggestion-item { padding: 10px; cursor: pointer; border-bottom: 1px solid #eee; }
+.suggestion-item:last-child { border-bottom: none; }
+.suggestion-item:hover { background-color: #f0f0f0; }
 
-/* Pozycjonowanie kontenera z sugestiami względem jego rodzica */
-.control-group {
-    position: relative;
-}
+/* --- NOWE STYLE: Style dla szacowanego czasu zamknięcia przejazdu --- */
 
-#suggestions-container {
-    display: none; /* Domyślnie ukryty */
-    position: absolute;
-    background-color: #ffffff;
-    border: 1px solid #ccc;
-    border-top: none;
-    z-index: 1000; /* Upewnij się, że jest nad innymi elementami */
-    width: 100%; /* Dopasuj szerokość do pola input */
-    max-height: 200px; /* Ogranicz wysokość, dodaj przewijanie */
-    overflow-y: auto;
-    box-sizing: border-box; /* Uniknij problemów z paddingiem i borderem */
-}
-
-.suggestion-item {
+.time-block {
+    transition: background-color 0.3s ease; /* Płynne przejście koloru */
+    border-radius: 6px; /* Lekkie zaokrąglenie dla kolorowych bloków */
     padding: 10px;
-    cursor: pointer;
-    border-bottom: 1px solid #eee;
 }
 
-.suggestion-item:last-child {
-    border-bottom: none;
+/* Kategoria NISKA (np. w nocy) - zielony */
+.closure-low {
+    background-color: #e6f4ea; /* Jasnozielone tło */
+    border-left: 5px solid #6fbf73; /* Ciemniejszy zielony akcent */
 }
 
-.suggestion-item:hover {
-    background-color: #f0f0f0;
+/* Kategoria ŚREDNIA (poza szczytem) - żółty/pomarańczowy */
+.closure-medium {
+    background-color: #fff4e5; /* Jasnopomarańczowe tło */
+    border-left: 5px solid #ffb74d; /* Ciemniejszy pomarańczowy akcent */
+}
+
+/* Kategoria WYSOKA (godziny szczytu) - czerwony */
+.closure-high {
+    background-color: #fbebed; /* Jasnoczerwone tło */
+    border-left: 5px solid #f44336; /* Ciemniejszy czerwony akcent */
+}
+
+/* Poprawka, aby tekst w kolorowych blokach był czytelniejszy */
+.closure-low .time, .closure-medium .time, .closure-high .time {
+    color: #333;
+    font-weight: 500;
+    font-size: 1.2em; /* Zmniejszamy czcionkę, bo tekst jest dłuższy */
 }

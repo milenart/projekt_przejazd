@@ -1,14 +1,50 @@
 from flask import Flask, jsonify, render_template, request
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, time
 import sqlite3
 import pandas as pd
 
 app = Flask(__name__)
 DB_FILE = "database.db"
 
+# --- NOWA FUNKCJA DO SZACOWANIA CZASU ZAMKNIĘCIA PRZEJAZDU ---
+def estimate_closure_time(arrival_time_str):
+    """
+    Szacuje czas zamknięcia przejazdu na podstawie pory dnia.
+    Zwraca słownik z tekstem dla użytkownika i kategorią do stylowania.
+    """
+    if not arrival_time_str:
+        return {"text": "Brak danych", "category": "low"}
+
+    try:
+        # Konwertujemy czas z tekstu na obiekt czasu
+        arrival_time = datetime.strptime(arrival_time_str, "%H:%M:%S").time()
+
+        # Definiujemy godziny szczytu
+        morning_rush_start = time(6, 30)
+        morning_rush_end = time(9, 0)
+        afternoon_rush_start = time(15, 30)
+        afternoon_rush_end = time(18, 30)
+
+        # Sprawdzamy, czy czas wpada w godziny szczytu
+        is_morning_rush = morning_rush_start <= arrival_time <= morning_rush_end
+        is_afternoon_rush = afternoon_rush_start <= arrival_time <= afternoon_rush_end
+
+        if is_morning_rush:
+            return {"text": "Ok. 7-10 min (Ruch poranny)", "category": "high"}
+        elif is_afternoon_rush:
+            return {"text": "Ok. 10-15 min (Szczyt popołudniowy)", "category": "high"}
+        elif time(23, 0) <= arrival_time or arrival_time <= time(4, 0):
+            return {"text": "Ok. 2-3 min (Ruch nocny)", "category": "low"}
+        else:
+            return {"text": "Ok. 4-6 min (Poza szczytem)", "category": "medium"}
+            
+    except (ValueError, TypeError):
+        return {"text": "Błąd czasu", "category": "low"}
+
+
 @app.route('/api/stations')
 def get_stations():
-    """Pobiera listę stacji z dedykowanej tabeli."""
+    # Ta funkcja pozostaje bez zmian
     try:
         conn = sqlite3.connect(DB_FILE)
         query = "SELECT stop_name FROM stations ORDER BY stop_name"
@@ -20,44 +56,31 @@ def get_stations():
         return jsonify([])
 
 def get_scheduled_trains(station_name, time_window_minutes=60):
-    """
-    Pobiera i filtruje pociągi dla DOWOLNEJ stacji wybranej przez użytkownika.
-    """
+    # Ta funkcja pozostaje bez zmian
     try:
         conn = sqlite3.connect(DB_FILE)
         now = datetime.now()
-        
-        weekday_map = {0: 'monday', 1: 'tuesday', 2: 'wednesday', 3: 'thursday', 4: 'friday', 5: 'saturday', 6: 'sunday'}
-        today_column = weekday_map[now.weekday()]
-        today_date_int = int(now.strftime("%Y%m%d"))
-        
-        current_time_str = now.strftime("%H:%M:%S")
         end_time = now + timedelta(minutes=time_window_minutes)
-        end_time_str = end_time.strftime("%H:%M:%S")
-
-        # --- POPRAWKA 1: Zmodyfikowane zapytanie SQL ---
-        # Teraz szukamy pociągów, których PRZYJAZD lub ODJAZD mieści się w oknie czasowym
-        query = f"""
-            SELECT * FROM schedule 
-            WHERE 
-                (stop_name = ?) AND 
-                ({today_column} = 1) AND 
-                (start_date <= {today_date_int}) AND 
-                (end_date >= {today_date_int}) AND
-                (
-                    (arrival_time BETWEEN '{current_time_str}' AND '{end_time_str}') OR
-                    (departure_time BETWEEN '{current_time_str}' AND '{end_time_str}')
-                )
-            ORDER BY departure_time, arrival_time
-        """
-        
-        upcoming_df = pd.read_sql_query(query, conn, params=(station_name,))
+        dates_to_check_ints = set()
+        current_scan_date = now.date()
+        while current_scan_date <= end_time.date():
+            dates_to_check_ints.add(int(current_scan_date.strftime("%Y%m%d")))
+            current_scan_date += timedelta(days=1)
+        dates_tuple_str = tuple(dates_to_check_ints)
+        if len(dates_tuple_str) == 1:
+            dates_tuple_str = f"({dates_tuple_str[0]})"
+        query = f"SELECT * FROM schedule WHERE stop_name = ? AND start_date IN {dates_tuple_str}"
+        all_potential_trains_df = pd.read_sql_query(query, conn, params=(station_name,))
         conn.close()
-        print(f"Znaleziono {len(upcoming_df)} pociągów dla stacji '{station_name}'.")
-        return upcoming_df.to_dict(orient='records')
-        
+        if all_potential_trains_df.empty:
+            return []
+        all_potential_trains_df['departure_datetime'] = pd.to_datetime(all_potential_trains_df['start_date'].astype(str) + ' ' + all_potential_trains_df['departure_time'], errors='coerce')
+        all_potential_trains_df['arrival_datetime'] = pd.to_datetime(all_potential_trains_df['start_date'].astype(str) + ' ' + all_potential_trains_df['arrival_time'], errors='coerce')
+        final_df = all_potential_trains_df[((all_potential_trains_df['departure_datetime'] >= now) & (all_potential_trains_df['departure_datetime'] <= end_time)) | ((all_potential_trains_df['arrival_datetime'] >= now) & (all_potential_trains_df['arrival_datetime'] <= end_time))]
+        print(f"Znaleziono {len(final_df)} pociągów po precyzyjnym filtrowaniu w Pythonie.")
+        return final_df.to_dict(orient='records')
     except Exception as e:
-        print(f"Błąd podczas odczytu z bazy danych: {e}")
+        print(f"Błąd krytyczny w get_scheduled_trains: {e}")
         return []
 
 @app.route('/')
@@ -76,11 +99,13 @@ def get_status():
     
     final_results = []
     for train in scheduled_trains:
-        # --- POPRAWKA 2: Dodajemy 'departure_time' do odpowiedzi JSON ---
+        # --- MODYFIKACJA: Używamy nowej funkcji i zmieniamy strukturę odpowiedzi ---
+        closure_estimate = estimate_closure_time(train.get('arrival_time'))
+
         final_results.append({
             "arrival_time": train.get('arrival_time'),
-            "departure_time": train.get('departure_time'),
             "trip_headsign": train.get('trip_headsign'),
+            "closure_estimate": closure_estimate, # Zamiast departure_time wysyłamy obiekt z szacunkami
             "live_status": 'SCHEDULED_ONLY',
             "delay_minutes": 0,
         })
@@ -90,6 +115,5 @@ def get_status():
         "trains": final_results
     })
 
-# Jeśli chcesz uruchamiać ten plik bezpośrednio
 if __name__ == '__main__':
     app.run(debug=True)
